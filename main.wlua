@@ -1,7 +1,9 @@
 local file = nil
+local debug = false
 local log = sys.File("log")
 local outputfolder = nil
 local probar = nil
+local prowin = nil
 local ui = require("ui")
 local sys = require("sys")
 local net = require("net")
@@ -11,12 +13,19 @@ local function betterprint(text)
   print(text)
   log:writeln(text)
 end
+local function negate(bool)
+  if bool then
+   return false
+   
+  else
+    return true
+  end
+end
 betterprint("Setting up...")
 local gameId = nil
 local tempfolder = nil
 -- Important Variables
 local win = ui.Window("MPGT: AutoPSX","fixed",300,150)
-local menu = ui.Menu("File","About")
 local filetext = ui.Entry(win,"No file selected...",9,27,251,20)
 local outputtext = ui.Entry(win,"No output folder selected...",9,56,224,20)
 local selectfileButton = ui.Button(win,"...",264,27,28,20)
@@ -27,23 +36,38 @@ filetext.textlimit = 40
 outputtext.enabled = false
 outputtext.textlimit = 40
 win:show()
-win.menu = menu
+win.menu = ui.Menu()
+local aboutmenu = win.menu:add("About", ui.Menu("AutoPSX on Github","Debug Mode"))
+function aboutmenu.submenu:onClick(item)
+    if item.text == "AutoPSX on Github" then
+      sys.cmd("start https://github.com/xFN10x/AutoPSX")
+    elseif item.text == "Debug Mode" then
+      debug = negate(debug)
+      item.checked = negate(item.checked)
+    end
+end
 
 win:show()
 betterprint("Done")
 console:clear(console.bgcolor)
-betterprint("░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░▒▓██████▓▒░░▒▓███████▓▒░ ░▒▓███████▓▒░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓████████▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓███████▓▒░ ░▒▓██████▓▒░ ░▒▓██████▓▒░  \n░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░             ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░             ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░   ░▒▓█▓▒░   ░▒▓██████▓▒░░▒▓█▓▒░      ░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒░\nMade by _FN10_")
+local function consolegreet()
+  betterprint(" ░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░▒▓██████▓▒░░▒▓███████▓▒░ ░▒▓███████▓▒░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓████████▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓███████▓▒░ ░▒▓██████▓▒░ ░▒▓██████▓▒░  \n░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░             ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░  ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░             ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ \n░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░   ░▒▓█▓▒░   ░▒▓██████▓▒░░▒▓█▓▒░      ░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒░\nMade by _FN10_")
 betterprint("Convert PSX games to eboots without the hassle!\n\n")
+end
+consolegreet()
 -- Functions
 local function SetupConversionWindow ()
-  local prowin = ui.Window("Converting...","fixed",200,100)
-  probar = ui.Progressbar(prowin,9,60,182,31)
-  local cancelbutton = ui.Button(prowin,"Cancel",9,36,182,20)
-  local label = ui.Label(prowin,"Converting...",9,10)
-  win:showmodal(prowin)
-  if probar ~= nil then probar:advance(2) end
+ -- if not delete then
+    prowin = ui.Window("Converting...","fixed",200,100)
+    probar = ui.Progressbar(prowin,9,60,182,31)
+    local cancelbutton = ui.Button(prowin,"Cancel",9,36,182,20)
+    local label = ui.Label(prowin,"Converting...",9,10)
+    win:showmodal(prowin)
+    if probar ~= nil then probar:advance(8) end
+ -- else
+    
+ -- end
 end
-
 local function magiclines( str )
     local pos = 1;
     return function()
@@ -74,14 +98,14 @@ local function GetGameID (file)
   file:open("read","utf8")
   local s = file:read()
   local finsd,end1 = string.find(s, "%a%a%a%a_%d%d%d%d%d")
-  if probar ~= nil then probar:advance(2) end
+  if probar ~= nil then probar:advance(8) end
   if finsd == nil then
     return false
   end
   betterprint(finsd) 
   local id = string.sub(s, finsd,end1)
   betterprint("Game id is ",id)
-  if probar ~= nil then probar:advance(10) end
+  if probar ~= nil then probar:advance(0) end
   return id
 end
 local function GetGameCover (gameid,dest)
@@ -89,38 +113,38 @@ local function GetGameCover (gameid,dest)
   betterprint("Getting ","https://username:pass@raw.githubusercontent.com".."/xlenore/psx-covers/refs/heads/main/covers/default/"..gameid:gsub("_","-")..".jpg")
   local http = net.Http("https://username:pass@raw.githubusercontent.com")
   local puthttp, output = await(http:download("/xlenore/psx-covers/refs/heads/main/covers/default/"..gameid:gsub("_","-")..".jpg"))
-  if probar ~= nil then probar:advance(2) end
-  if dest == "dia" then
+  if probar ~= nil then probar:advance(6) end
+  if debug then
     des = ui.savedialog("Save Cover to...",false,"JPEG Image (*.jpg)|*.jpg|All files (*.*)|*.*")
-    if probar ~= nil then probar:advance(2) end
+    if probar ~= nil then probar:advance(6) end
   else
     des = sys.File(dest.fullpath.."/cover.jpg")
-    if probar ~= nil then probar:advance(2) end
+    if probar ~= nil then probar:advance(6) end
    -- des:open():move()
   end
   output["file"]:open("read","binary")
   des:open("write","binary")
   des:write(output["file"]:read())
   http:close()
-  if probar ~= nil then probar:advance(2) end
+  if probar ~= nil then probar:advance(6) end
   des:close()
-  if probar ~= nil then probar:advance(2) end
+  if probar ~= nil then probar:advance(6) end
   return des.fullpath
 end
 local function CreateIcon (tempfolderfullpath)
   local icon0 = sys.File(tempfolderfullpath.."/icon0.png")
   sys.File(sys.currentdir.."/programs/imagemag/ICON0.PNG"):copy(icon0.fullpath)
   betterprint(sys.currentdir.."/programs/imagemag/magick.exe")
-  if probar ~= nil then probar:advance(1) end
+  if probar ~= nil then probar:advance(4) end
   sys.cmd(sys.currentdir.."/programs/imagemag/magick.exe".." mogrify -resize 70x70 "..tempfolderfullpath.."/cover.jpg")
-  if probar ~= nil then probar:advance(1) end
+  if probar ~= nil then probar:advance(4) end
   sys.cmd(sys.currentdir.."/programs/imagemag/magick.exe".." "..tempfolderfullpath.."/cover.jpg "..tempfolderfullpath.."/cover.png") --Convert to PNG
-  if probar ~= nil then probar:advance(1) end
+  if probar ~= nil then probar:advance(4) end
   sys.cmd(sys.currentdir.."/programs/imagemag/magick.exe "..tempfolderfullpath.."/cover.png"..' -gravity center -background transparent -extent  80x80 '..tempfolderfullpath.."/cover.png")
-  if probar ~= nil then probar:advance(1) end
+  if probar ~= nil then probar:advance(4) end
   betterprint("canvas size ",sys.currentdir.."/programs/imagemag/magick.exe"..tempfolderfullpath.."/cover.png".." -gravity center -extent -background rgba(255, 0, 0, 1.0) 80x80 "..tempfolderfullpath.."/cover.png")
   sys.cmd(sys.currentdir.."/programs/imagemag/magick.exe".." composite -gravity center "..icon0.fullpath.." "..tempfolderfullpath.."/cover.png "..tempfolderfullpath.."/finshed.png")
-  if probar ~= nil then probar:advance(1) end
+  if probar ~= nil then probar:advance(4) end
   return sys.File(tempfolderfullpath.."/finshed.png")
 end
 local function GetTrackFileFromCue(cue,track)
@@ -154,7 +178,7 @@ local function GetTrackFileFromCue(cue,track)
   if binfile.exists then
     cuefile:close()
     betterprint("Got Track file name, ",binfile.name," with track amount ",tracks)
-    if probar ~= nil then probar:advance(3) end
+    if probar ~= nil then probar:advance(6) end
     return binfile,tracks
   else
     ui.error("Fatal Error\nFiles Cue reported dont exist. (ERR1)")
@@ -163,9 +187,26 @@ local function GetTrackFileFromCue(cue,track)
 end
 local function FinalStep (tempfolderfullpath,cue)
   local function lastfinalstep (eboot)
+    if sys.File(outputfolder.fullpath.."/EBOOT.PBP").exists then 
+      local confirm = ui.confirm(outputfolder.fullpath.."/EBOOT.PBP".." already exists. Replace it?")
+      if confirm == "cancel" or confirm == "no" then
+        tempfolder:removeall()
+        console:clear("console.bgcolor")
+        prowin:hide()
+        consolegreet()
+        return true
+      elseif confirm == "yes" then
+        sys.File(outputfolder.fullpath.."/EBOOT.PBP"):remove()
+      end
+    end
     if eboot:copy(outputfolder.fullpath.."/EBOOT.PBP") == nil then ui.error("Fatal Error\nFailed EBOOT copy. (ERR6)") win:hide() return false end
     if probar ~= nil then probar:advance(10000) end
-    ui.msg("EBOOT.PBP built to "..outputfolder.fullpath.."/EBOOT.PBP"..".")
+    ui.info("EBOOT.PBP built to "..outputfolder.fullpath.."/EBOOT.PBP"..".")
+    tempfolder:removeall()
+    prowin:hide()
+    console:clear("console.bgcolor")
+    consolegreet()
+    --for each
     return true
   end
   local mainfolderfullpath = tempfolderfullpath.."/mainfolder"
@@ -183,12 +224,12 @@ local function FinalStep (tempfolderfullpath,cue)
       file:copy(tempfolderfullpath.."/mainfolder/Resources/"..file.name) 
     end
   end 
-  if probar ~= nil then probar:advance(3) end
+  if probar ~= nil then probar:advance(4) end
   if newprogram == nil then ui.error("Fatal Error\nFailed Copy. (ERR5)") win:hide() return false end
  -- betterprint(mainfolderfullpath..'/psxpack.exe -i"'..mainfolderfullpath.."/"..cue.name..'" --import --resource-format "'..mainfolderfullpath..'"\\%RESOURCE\\%.\\%EXT\\%')
   local command = mainfolderfullpath..'/psxpack.exe -i"'..mainfolderfullpath.."/"..cue.name..'" --import --resource-format "'..mainfolderfullpath..'"%RESOURCE%.%EXT%'
   if not sys.cmd(command) then betterprint("Error! Retrying CMDS...") if not sys.cmd(mainfolderfullpath..'/psxpack.exe -i"'..mainfolderfullpath.."/"..cue.name..'" --import --resource-format "'..mainfolderfullpath..'"%RESOURCE%.%EXT%') then ui.error("Fatal Error\nFailed CMD. (ERR7)") win:hide() return false end end
-  if probar ~= nil then probar:advance(3) end
+  if probar ~= nil then probar:advance(8) end
   for file in each(resourcefolder:list("*.pbp")) do
     lastfinalstep(file)
     break
@@ -209,11 +250,11 @@ local function SetupConversionFolder (tempfolderfullpath,cue,gameid,coverfile)
       end
     end
     cue:copy(newfolderpath.."/"..cue.name)
-    if probar ~= nil then probar:advance(1) end
+    if probar ~= nil then probar:advance(4) end
     coverfile:copy(newfolderpath.."/".."ICON0.png") 
-    if probar ~= nil then probar:advance(1) end
+    if probar ~= nil then probar:advance(4) end
     FinalStep(tempfolderfullpath,cue)
-    if probar ~= nil then probar:advance(1) end
+    if probar ~= nil then probar:advance(4) end
   end
   local function step2 (newfolderpath)
     betterprint("step2")
@@ -249,7 +290,10 @@ local function Convert (Cue)
   SetupConversionWindow()
  -- local binfile = 
   tempfolder = sys.tempdir("mgt")
-  sys.cmd("explorer "..tempfolder.fullpath)
+  if debug then
+    sys.cmd("explorer "..tempfolder.fullpath)
+  end
+  
   local track1,trackamount = GetTrackFileFromCue(Cue,"01")
   local ggi = GetGameID(track1)
   if ggi then
