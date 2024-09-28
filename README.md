@@ -1,6 +1,8 @@
 # AutoPSX
 A simple way to make EBOOTS
 
+[AutoPSX on GBATemp](https://gbatemp.net/threads/new-eboot-making-program.661196/)
+
 ### Features
 
  - Create M3Us right in the program
