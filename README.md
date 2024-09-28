@@ -19,7 +19,8 @@ The programs it uses are:
  - [ImageMagick](https://github.com/ImageMagick)
 
 (I DONT OWN ANY OF THESE PROGRAMS!!) 
-The feature  ***- No image editing nessecary*** refers to how this program downloads the covers from this database
+
+The feature  ***- No image editing nessecary*** refers to how this program downloads the covers [from this database](https://github.com/xlenore/psx-covers)
 
 ## Building (From Source)
 *skip if you aren't a nerd... and if you arn't trying to build it...*
