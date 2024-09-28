@@ -4,3 +4,6 @@ log
 *.log
 lua54.dll
 rtc.exe
+main.exe
+json.dll
+net.dll
