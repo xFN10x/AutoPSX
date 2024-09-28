@@ -17,6 +17,7 @@ The programs it uses are:
  - [PSXPackager](https://github.com/RupertAvery/PSXPackager)
  - [ChdMan](https://github.com/charlesthobe/chdman)
  - [ImageMagick](https://github.com/ImageMagick)
+
 (I DONT OWN ANY OF THESE PROGRAMS!!) 
 The feature  ***- No image editing nessecary*** refers to how this program downloads the covers from this database
 
