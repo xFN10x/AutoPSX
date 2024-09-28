@@ -1,6 +1,6 @@
 local file = nil
 local debug = false
-local log = sys.File("log")
+local log = sys.File("program.log")
 local outputfolder = nil
 local probar = nil
 local prowin = nil
@@ -31,7 +31,10 @@ local outputtext = ui.Entry(win, "No output folder selected...", 9, 56, 224, 20)
 local selectfileButton = ui.Button(win, "...", 264, 27, 28, 20)
 local outputfileButton = ui.Button(win, "...", 237, 56, 57, 20)
 local convertbutton = ui.Button(win, "Convert", 180, 85, 111, 40)
+local compressiontext = ui.Label(win,"Compression Level",31,98,100)
 local gamedatabase = json.decode(sys.File(sys.currentdir.."/psx.games.json"):open("read","utf8"):read())
+local compressionlevelselection = ui.Combobox(win,false,{"0","1","2","3","4","5","6","7","8","9"},140,95,31)
+compressionlevelselection.selected = compressionlevelselection.items[6]
 --Other impotant things
 filetext.enabled = false
 filetext.textlimit = 40
@@ -40,6 +43,16 @@ outputtext.textlimit = 40
 win:show()
 win.menu = ui.Menu()
 --Important Functions
+local function UpdateChoosenFile(efile)
+    file = efile
+    filetext.text = efile.fullpath
+    return true
+end
+local function UpdateOutputFolder(folder)
+    outputfolder = folder
+    outputtext.text = folder.fullpath
+    return true
+end
 local function magiclines(str)
     local pos = 1
     return function()
@@ -278,7 +291,19 @@ local function M3UCreator()
     local createbutton = componates["CreateButton"]
     local cues = {}
     win:showmodal(m3uwindow)
+    function addcuebutton.onClick()
+        local choosenfile = ui.opendialog("Open CUE", false, "PS1 CUE files (*.cue)|*.cue|All Files (*.*)|*.*")
+        if choosenfile == nil then
+            return
+        end
+        table.insert(cues, choosenfile)
+        cuelist:add(choosenfile.name)
+    end
     function createbutton.onClick()
+      if #cues == 0 then
+        ui.error("No CUEs selected.")
+        return false
+      end
       local savefile = ui.savedialog("Save M3U to...",false,"PS1 Multi-Disk files (*.m3u)|*.m3u|All files (*.*)|*.*")
       if not savefile then return false end
   --    local bin = GetTrackFileFromCue(cues[1],"01")
@@ -307,27 +332,62 @@ local function M3UCreator()
 end
 
     function createandusebutton.onClick()
+      local function useit (gamename,savefile,moveloc)
+        savefile:open("write","unicode")
+        for k,v in pairs(cues) do
+          print(v.name)
+          savefile:writeln(v.name)
+        end
+        savefile:flush()
+        savefile:close()
+        betterprint("(Create and use) Set input file to "..savefile.fullpath.." location should be "..moveloc.."/"..gamename..".m3u")
+        local check = sys.File(moveloc.."/"..gamename..".m3u")
+        if check.exists then check:remove() end
+        if not savefile:move(moveloc.."/"..gamename..".m3u") then ui.error("Operation error.\nFailed move. (ERR1)" ) return false end
+        savefile = sys.File(moveloc.."/"..gamename..".m3u")
+        UpdateChoosenFile(savefile)
+        ui.info("Set input file to m3u.")
+        m3uwindow:hide()
+      end
+      if #cues == 0 then
+        ui.error("No CUEs selected.")
+        return false
+      end
       local savefile = sys.File(sys.env.TMP.."/game.m3u")
-      print(savefile.fullpath)
       local bin = GetTrackFileFromCue(cues[1],"01",nil)
       local gameidD = GetGameID(bin)
       local gameIDDD = nil
       local gamename = nil
-      savefile:open("write","unicode")
-      for k,v in pairs(cues) do
-        print(v.name)
-        savefile:writeln(v.name)
-      end
-      savefile:flush()
-      savefile:close()
-    end
-    function addcuebutton.onClick()
-        local choosenfile = ui.opendialog("Open CUE", false, "PS1 CUE files (*.cue)|*.cue|All Files (*.*)|*.*")
-        if choosenfile == nil then
-            return
+      if gameidD then
+        gameIDDD = gameidD:gsub("_","-")
+        useit(gamedatabase[gameIDDD],savefile,cues[1].directory.fullpath)
+      else
+        ui.error("Failed to find GameID from track 1!\nPlease Type it Manually")
+        local window = ui.Window("MPGT: Manual GameID", "fixed", 200, 100)
+        local textbox = ui.Entry(window, "XXXX_XXXXX", 63, 18, 128, 20)
+        local text1 = ui.Label(window, "Game ID", 9, 18, 54, 20)
+        local text2 = ui.Label(window, "Please include the underscore. (e.g. SLUS_00072)", 9, 47, 182)
+        local submitbutton = ui.Button(window, "Submit", 9, 65, 182)
+        local done = false
+        text2.fontsize = 6
+        text1.textalign = "center"
+        text2.textalign = "center"
+        win:showmodal(window)
+        for i = 0, 20, 1 do
+            window:tofront()
         end
-        table.insert(cues, choosenfile)
-        cuelist:add(choosenfile.name)
+        function submitbutton.onClick()
+            local s = textbox.text
+            local patern = string.find(s, "%a%a%a%a_%d%d%d%d%d")
+            if patern == nil then
+                ui.error("ID Format incorrect.")
+            else
+              window:hide()
+                gameIDDD = s:gsub("_","-")
+                useit(gamedatabase[gameIDDD],savefile,cues[1].directory.fullpath)
+            end
+        end
+      end
     end
 end
 --Menu things
@@ -409,6 +469,8 @@ local function GetGameCover(gameid, dest)
         probar:advance(6)
     end
     des:close()
+    output["file"]:close()
+    output["file"]:remove()
     if probar ~= nil then
         probar:advance(6)
     end
@@ -481,28 +543,16 @@ local function GetCueFileFromM3U(m3u,disk)
 end
 local function FinalStep(tempfolderfullpath, cue)
     local function lastfinalstep(eboot)
-        if sys.File(outputfolder.fullpath .. "/EBOOT.PBP").exists then
-            local confirm = ui.confirm(outputfolder.fullpath .. "/EBOOT.PBP" .. " already exists. Replace it?")
-            if confirm == "cancel" or confirm == "no" then
-                tempfolder:removeall()
-                console:clear("console.bgcolor")
-                prowin:hide()
-                consolegreet()
-                return true
-            elseif confirm == "yes" then
-                sys.File(outputfolder.fullpath .. "/EBOOT.PBP"):remove()
-            end
-        end
-        if eboot:copy(outputfolder.fullpath .. "/EBOOT.PBP") == nil then
-            ui.error("Fatal Error\nFailed EBOOT copy. (ERR6)")
-            win:hide()
-            return false
-        end
+        
+        --if eboot:move(outputfolder.fullpath .. "/EBOOT.PBP") == nil then
+        --    ui.error("Fatal Error\nFailed EBOOT move. (ERR6)")
+        --    win:hide()
+        --    return false
+        --end
         if probar ~= nil then
             probar:advance(10000)
         end
-        ui.info("EBOOT.PBP built to " .. outputfolder.fullpath .. "/EBOOT.PBP" .. ".")
-        tempfolder:removeall()
+        ui.info("EBOOT.PBP built to " .. outputfolder.fullpath .. "/EBOOT.pbp" .. ".")
         prowin:hide()
         console:clear("console.bgcolor")
         consolegreet()
@@ -533,26 +583,42 @@ local function FinalStep(tempfolderfullpath, cue)
         return false
     end
     -- betterprint(mainfolderfullpath..'/psxpack.exe -i"'..mainfolderfullpath.."/"..cue.name..'" --import --resource-format "'..mainfolderfullpath..'"\\%RESOURCE\\%.\\%EXT\\%')
+    if sys.File(outputfolder.fullpath .. "/EBOOT.PBP").exists then
+      local confirm = ui.confirm(outputfolder.fullpath .. "/EBOOT.PBP" .. " already exists. Replace it?")
+      if confirm == "cancel" or confirm == "no" then
+        tempfolder:removeall()
+        console:clear("console.bgcolor")
+        prowin:hide()
+        consolegreet()
+        return true
+      elseif confirm == "yes" then
+        sys.File(outputfolder.fullpath .. "/EBOOT.PBP"):remove()
+      end
+    end
     local command =
         mainfolderfullpath ..
-        '/psxpack.exe -i"' ..
+        '/psxpack.exe -i "' ..
             mainfolderfullpath ..
-                "/" .. cue.name .. '" --import --resource-format "' .. mainfolderfullpath .. '"%RESOURCE%.%EXT%'
+                "/" .. cue.name .. '" -x -g --verbosity 4 -l'..tonumber(compressionlevelselection.selected.text)..' --output "'..outputfolder.fullpath..'" --import --resource-format "' .. mainfolderfullpath .. '/"%RESOURCE%.%EXT%'
+    print(command)
     if not sys.cmd(command) then
-        betterprint("Error! Retrying CMDS...")
+        betterprint("Error! Retrying CMDS... 1")
         if
-            not sys.cmd(
-                mainfolderfullpath ..
-                    '/psxpack.exe -i"' ..
-                        mainfolderfullpath ..
-                            "/" ..
-                                cue.name ..
-                                    '" --import --resource-format "' .. mainfolderfullpath .. '"%RESOURCE%.%EXT%'
-            )
+            not sys.cmd(command,false,true)
+         then
+            betterprint("Error! Retrying CMDS... 2")
+        if
+            not sys.cmd(command,true,false)
+         then
+            betterprint("Error! Retrying CMDS... 3")
+        if
+            not sys.cmd(command,false,false)
          then
             ui.error("Fatal Error\nFailed CMD. (ERR7)")
             win:hide()
             return false
+        end
+        end
         end
     end
     if probar ~= nil then
@@ -681,6 +747,7 @@ local function Convert(Cue)
             else
                 gameId = s
                 convert2(gameId)
+                window:hide()
             end
         end
       end
@@ -692,7 +759,7 @@ local function Convert(Cue)
         convert2(gameId)
       else
         ui.error("Failed to find GameID from track 1!\nPlease Type it Manually")
-        local window = ui.Window("MPGT: Manual GameID", "fixed", 200, 100)
+        local window = ui.Window("Manual GameID", "fixed", 200, 100)
         local textbox = ui.Entry(window, "XXXX_XXXXX", 63, 18, 128, 20)
         local text1 = ui.Label(window, "Game ID", 9, 18, 54, 20)
         local text2 = ui.Label(window, "Please include the underscore. (e.g. SLUS_00072)", 9, 47, 182)
@@ -713,22 +780,15 @@ local function Convert(Cue)
             else
                 gameId = s
                 convert2(gameId)
+                window:hide()
             end
+            
         end
       end
     end
 end
 
-local function UpdateChoosenFile(efile)
-    file = efile
-    filetext.text = efile.fullpath
-    return true
-end
-local function UpdateOutputFolder(folder)
-    outputfolder = folder
-    outputtext.text = folder.fullpath
-    return true
-end
+
 --Non-local functions
 --function filebutton.onClick()
 --  file = ui.opendialog("Open CUE",false,"PS1 CUE files (*.cue)|*.cue|All Files (*.*)|*.*")
