@@ -2,3 +2,5 @@
 log
 *.jpg
 *.log
+lua54.dll
+rtc.exe
